@@ -24,7 +24,7 @@ jobs:
             require('fs').writeFileSync('oidc_token.txt', id_token);
 
       - name: Install Azure CLI
-        uses: azure/setup-azure@v3
+        uses: azure/setup-azurecli@v1
 
       - name: Azure login with federated token
         run: |
@@ -35,14 +35,6 @@ jobs:
 
       - name: Get flag content from blob
         run: |
-          echo "📦 Reading blob contents from Azure..."
-          az storage blob show \
-            --account-name iamazurelab3d26800f7 \
-            --container-name flag \
-            --name flag.txt \
-            --auth-mode login \
-            --query "properties.contentLength"
-
           echo "📖 Downloading and printing flag..."
           az storage blob download \
             --account-name iamazurelab3d26800f7 \
