@@ -23,8 +23,9 @@ jobs:
             const id_token = await core.getIDToken("api://AzureADTokenExchange");
             require('fs').writeFileSync('oidc_token.txt', id_token);
 
-      - name: Install Azure CLI
-        uses: azure/setup-azurecli@v1
+      - name: Install Azure CLI manually
+        run: |
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 
       - name: Azure login with federated token
         run: |
