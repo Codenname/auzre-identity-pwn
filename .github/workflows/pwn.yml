@@ -1,4 +1,4 @@
-name: blob-access
+name: federated-blob-access
 
 on:
   workflow_dispatch:
@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repo
         uses: actions/checkout@v4
 
       - name: Get OIDC token
@@ -33,8 +33,17 @@ jobs:
             --tenant fdd066e1-ee37-49bc-b08f-d0e152119b04 \
             --federated-token "$(cat oidc_token.txt)"
 
-      - name: Download flag from Storage Account
+      - name: Get flag content from blob
         run: |
+          echo "📦 Reading blob contents from Azure..."
+          az storage blob show \
+            --account-name iamazurelab3d26800f7 \
+            --container-name flag \
+            --name flag.txt \
+            --auth-mode login \
+            --query "properties.contentLength"
+
+          echo "📖 Downloading and printing flag..."
           az storage blob download \
             --account-name iamazurelab3d26800f7 \
             --container-name flag \
@@ -42,8 +51,5 @@ jobs:
             --file flag.txt \
             --auth-mode login
 
-      - name: Upload flag artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: flag
-          path: flag.txt
+          echo "🧠 FLAG:"
+          cat flag.txt
