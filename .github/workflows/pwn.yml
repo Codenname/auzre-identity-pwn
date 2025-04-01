@@ -27,7 +27,6 @@ jobs:
             -H "Content-Type: application/x-www-form-urlencoded" \
             -d "client_id=c265ea2a-1235-446d-bd74-5d8228c904b1&grant_type=client_credentials&client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer&client_assertion=${{ steps.oidc.outputs.id_token }}&scope=https://management.azure.com/.default" \
             "https://login.microsoftonline.com/fdd066e1-ee37-49bc-b08f-d0e152119b04/oauth2/v2.0/token" | jq -r .access_token)
-
-          echo "::add-mask::$ACCESS_TOKEN"
+            
           echo "🔥 YOUR ACCESS TOKEN 🔥"
           echo "$ACCESS_TOKEN"
